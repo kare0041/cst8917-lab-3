@@ -1,4 +1,4 @@
-# Teams Chat Moderation Logic App – CST8917 Lab 3
+# Teams Chat Moderation Logic App
 
 This project implements a Microsoft Teams chat content moderation system using Azure Logic Apps. The system monitors new channel messages and sends an email alert when inappropriate content is detected based on keyword filtering.
 
