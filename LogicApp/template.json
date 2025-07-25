@@ -1,0 +1,122 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "workflows_TeamsModerationLogicApp_name": {
+            "defaultValue": "TeamsModerationLogicApp",
+            "type": "String"
+        },
+        "connections_teams_externalid": {
+            "defaultValue": "/subscriptions/a45f626d-5ae3-4176-ac41-2a5a558301a5/resourceGroups/cst8917-lab-3-rg/providers/Microsoft.Web/connections/teams",
+            "type": "String"
+        },
+        "connections_office365_externalid": {
+            "defaultValue": "/subscriptions/a45f626d-5ae3-4176-ac41-2a5a558301a5/resourceGroups/cst8917-lab-3-rg/providers/Microsoft.Web/connections/office365",
+            "type": "String"
+        }
+    },
+    "variables": {},
+    "resources": [
+        {
+            "type": "Microsoft.Logic/workflows",
+            "apiVersion": "2017-07-01",
+            "name": "[parameters('workflows_TeamsModerationLogicApp_name')]",
+            "location": "canadacentral",
+            "properties": {
+                "state": "Enabled",
+                "definition": {
+                    "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+                    "contentVersion": "1.0.0.0",
+                    "parameters": {
+                        "$connections": {
+                            "defaultValue": {},
+                            "type": "Object"
+                        }
+                    },
+                    "triggers": {
+                        "When_a_new_channel_message_is_added": {
+                            "recurrence": {
+                                "interval": 3,
+                                "frequency": "Minute"
+                            },
+                            "evaluatedRecurrence": {
+                                "interval": 3,
+                                "frequency": "Minute"
+                            },
+                            "splitOn": "@triggerBody()",
+                            "type": "ApiConnection",
+                            "inputs": {
+                                "host": {
+                                    "connection": {
+                                        "name": "@parameters('$connections')['teams']['connectionId']"
+                                    }
+                                },
+                                "method": "get",
+                                "path": "/trigger/beta/teams/@{encodeURIComponent('01c69bb0-0559-424e-bd49-6dae8400cbcc')}/channels/@{encodeURIComponent('19:OsGWoPVIRTUGL28obW-BFiGUk8IL-0n5U75j3Y6J7KI1@thread.tacv2')}/messages",
+                                "queries": {
+                                    "$top": 50
+                                }
+                            }
+                        }
+                    },
+                    "actions": {
+                        "Condition": {
+                            "actions": {
+                                "Send_an_email_(V2)": {
+                                    "type": "ApiConnection",
+                                    "inputs": {
+                                        "host": {
+                                            "connection": {
+                                                "name": "@parameters('$connections')['office365']['connectionId']"
+                                            }
+                                        },
+                                        "method": "post",
+                                        "body": {
+                                            "To": "kadanielo@gmail.com; kare0041@algonquinlive.com",
+                                            "Subject": "Alert: Inappropriate Message Detected",
+                                            "Body": "<p class=\"editor-paragraph\">Dear Administrator,<br>This is to report the below inappropriate message.<br><br>@{triggerBody()?['body']?['content']} posted at @{triggerBody()?['createdDateTime']}<br><br>Regards,</p><br>",
+                                            "Importance": "High"
+                                        },
+                                        "path": "/v2/Mail"
+                                    }
+                                }
+                            },
+                            "runAfter": {},
+                            "else": {
+                                "actions": {}
+                            },
+                            "expression": {
+                                "and": [
+                                    {
+                                        "contains": [
+                                            "@triggerBody()?['body']?['content']",
+                                            "test"
+                                        ]
+                                    }
+                                ]
+                            },
+                            "type": "If"
+                        }
+                    },
+                    "outputs": {}
+                },
+                "parameters": {
+                    "$connections": {
+                        "value": {
+                            "teams": {
+                                "id": "/subscriptions/a45f626d-5ae3-4176-ac41-2a5a558301a5/providers/Microsoft.Web/locations/canadacentral/managedApis/teams",
+                                "connectionId": "[parameters('connections_teams_externalid')]",
+                                "connectionName": "teams"
+                            },
+                            "office365": {
+                                "id": "/subscriptions/a45f626d-5ae3-4176-ac41-2a5a558301a5/providers/Microsoft.Web/locations/canadacentral/managedApis/office365",
+                                "connectionId": "[parameters('connections_office365_externalid')]",
+                                "connectionName": "office365"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    ]
+}
